@@ -1,0 +1,749 @@
+# © Copyright 2018 Micro Focus or one of its affiliates
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  "Deploys a Micro Focus Enterprise Server Fileshare Server. **WARNING** This
+  template creates EC2 instances and related resources. You will be billed for
+  the AWS resources used if you create a stack from this template. Micro Focus
+  Enterprise Server is licensed separately, please review the terms and
+  conditions here (https://www.microfocus.com/about/legal/) for further details.
+  (qs-1p440hhtu)"
+Metadata:
+  cfn-lint:
+    config:
+      ignore_checks:
+        - W9002
+        - W9003
+        - W4002
+        - W1020
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: Software License Agreement
+        Parameters:
+          - LicenseAgreement
+          - ESLicenseFilename
+      - Label:
+          default: Network Configuration
+        Parameters:
+          - VPCID
+          - PrivateSubnet1AID
+          - AvailabilityZones
+      - Label:
+          default: Microsoft Active Directory Configuration
+        Parameters:
+          - DomainDNSName
+          - DomainMemberSGID
+          - DomainAdminPassword
+      - Label:
+          default: Enterprise Server Fileshare Configuration
+        Parameters:
+          - FSInstanceType
+          - FSStorageInGiB
+          - FSVIEWUserPassword
+          - FSServerName
+          - KeyPairName
+          - FSClientAccessSGID
+          - ESCWLogGroup
+          - ESS3BucketName
+          - ESS3BucketRegion
+          - NotificationARN
+          - ESResourceNamePrefix
+      - Label:
+          default: Enterprise Server Demo Apps Configuration
+        Parameters:
+          - InstallDemoApps
+      - Label:
+          default: AWS Quick Start Configuration
+        Parameters:
+          - QSS3BucketName
+          - QSS3BucketRegion
+          - QSS3KeyPrefix
+    ParameterLabels:
+      AvailabilityZones:
+        default: Availability Zones
+      DomainAdminPassword:
+        default: Domain Admin account password
+      DomainDNSName:
+        default: Domain DNS name
+      DomainMemberSGID:
+        default: Domain member Security Group ID
+      ESCWLogGroup:
+        default: Amazon CloudWatch LogGroup
+      ESLicenseFilename:
+        default: Enterprise Server license filename
+      ESResourceNamePrefix:
+        default: Resource 'Name' prefix
+      ESS3BucketName:
+        default: Enterprise Server S3 bucket name
+      ESS3BucketRegion:
+        default: Enterprise Server S3 bucket region
+      FSInstanceType:
+        default: Enterprise Server Fileshare instance type
+      FSClientAccessSGID:
+        default: ES Client Access Security Group ID
+      FSServerName:
+        default: Fileshare Server Name
+      FSStorageInGiB:
+        default: Fileshare allocated storage size
+      FSVIEWUserPassword:
+        default: FSVIEW user password
+      InstallDemoApps:
+        default: Install Demo Apps
+      KeyPairName:
+        default: Key pair name
+      LicenseAgreement:
+        default: License agreement
+      NotificationARN:
+        default: Notification ARN
+      PrivateSubnet1AID:
+        default: Private Subnet 1A ID
+      QSS3BucketName:
+        default: Quick Start S3 bucket name
+      QSS3BucketRegion:
+        default: Quick Start S3 bucket region
+      QSS3KeyPrefix:
+        default: Quick Start S3 key prefix
+      VPCID:
+        default: VPC ID
+Parameters:
+  AvailabilityZones:
+    Description: >-
+      List of Availability Zones to use for the subnets in the VPC. Only two
+      Availability Zones are used for this deployment, and the logical order
+      of your selections is preserved.
+    Type: 'List<AWS::EC2::AvailabilityZone::Name>'
+  BastionAccessSGID:
+    Type: 'AWS::EC2::SecurityGroup::Id'
+    Description: >-
+      The security group ID for access from the Remote Desktop Gateway.
+  DomainAdminPassword:
+    AllowedPattern: >-
+      (?=^.{6,255}$)((?=.*\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*
+    Description: >-
+      The password for the domain Admin account. Must be at least 8 characters
+      containing letters, numbers, and symbols.
+    MaxLength: '32'
+    MinLength: '8'
+    NoEcho: true
+    Type: String
+  DomainDNSName:
+    AllowedPattern: '[a-zA-Z0-9\-]+\..+'
+    Default: example.com
+    Description: >-
+      The fully qualified domain name (FQDN), e.g., example.com. Must be 2-255
+      characters.
+    MaxLength: '255'
+    MinLength: '2'
+    Type: String
+  DomainMemberSGID:
+    Description: >-
+      The ID of the Domain Member Security Group (e.g., sg-7f16e910).
+    Type: 'AWS::EC2::SecurityGroup::Id'
+  ESCWLogGroup:
+    Type: String
+    Description: The logical ID of the Amazon CloudWatch Logs Log Group
+  ESLicenseFilename:
+    Description: >-
+      Place the license file obtained from Micro Focus in the S3 bucket folder:
+      s3://<Enterprise Server S3 bucket name>/license/
+    Type: String
+  ESResourceNamePrefix:
+    Default: 'AWS::StackName'
+    Description: >-
+      Used to prefix resource 'Name' tags. Leave empty for no prefix.
+      Otherwise, use 'AWS::StackName' or a value such as the parent stack's
+      name.
+    Type: String
+  ESS3BucketName:
+    AllowedPattern: '^[a-z0-9][a-z0-9-.]*$'
+    Description: >-
+      The name of the existing S3 bucket used to store/retrieve objects specific
+      to this stack. A system integrator extending this Quick Start should use
+      this bucket to store or retrieve items needed. This string can include
+      numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot
+      start or end with a hyphen (-).
+    Type: String
+  ESS3BucketRegion:
+    Default: 'us-east-1'
+    Description: 'The AWS Region where the Enterprise Server S3 bucket (ESS3BucketName) is hosted. When using your own bucket, you must specify this value.'
+    Type: String
+  FSClientAccessSGID:
+    Type: 'AWS::EC2::SecurityGroup::Id'
+    Description: >-
+      Security Group ID for application ingress into the Enterpriser Server Fileshare
+      instance (e.g., sg-1234abcd).
+  FSInstanceType:
+    AllowedValues:
+      - c5.large
+      - c5.xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+    Description: The type of Enterprise Server Fileshare instance.
+    Default: c5.large
+    Type: String
+  FSServerName:
+    Description: The name to assign to the Fileshare instance Windows Hostname
+    Default: FSServer
+    Type: String
+  FSStorageInGiB:
+    Default: 250
+    Description: Enter 1-16384 GiB.
+    MaxValue: 16384
+    MinValue: 1
+    Type: Number
+  FSVIEWUserPassword:
+    AllowedPattern: >-
+      ^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,32}$
+    Description: >-
+      The password for the FSVIEW user. Must contain 8 to 32 characters,
+      at least one uppercase letter, one lowercase letter, one number and
+      one special character.
+    ConstraintDescription: >-
+      Must contain 8 to 32 characters, at least one uppercase letter, one
+      lowercase letter, one number and one special character.
+    MaxLength: '32'
+    MinLength: '8'
+    NoEcho: true
+    Type: String
+  InstallDemoApps:
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    Default: true
+    Description: Choose 'false' if you want to skip installation of the Enterprise Server demo apps.
+  KeyPairName:
+    Description: >-
+      The name of an existing EC2 key pair. All instances will launch with this key pair.
+    Type: 'AWS::EC2::KeyPair::KeyName'
+  LicenseAgreement:
+    AllowedValues:
+      - I agree
+      - '-'
+    ConstraintDescription: Must answer 'I agree'.
+    Default: '-'
+    Description: >-
+      I have read and agree to the license terms for Micro Focus Enterprise
+      Server
+      (https://www.microfocus.com/documentation/enterprise-developer/ed-latest/ES-WIN/GUID-0562B3C9-2271-4CE8-AF64-93DE4940077F.html).
+    Type: String
+  NotificationARN:
+    Description: >-
+      (optional) An existing Amazon SNS topic where notifications about are
+      sent, e.g., email notifications.
+    Type: String
+    Default: ''
+  PrivateSubnet1AID:
+    Description: >-
+      The ID of private subnet 1A in Availability Zone 1 (e.g.,
+      subnet-a0246dcd).
+    Type: 'AWS::EC2::Subnet::Id'
+  QSS3BucketName:
+    AllowedPattern: '^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$'
+    ConstraintDescription: >-
+      Quick Start bucket name can include numbers, lowercase letters, uppercase
+      letters, and hyphens (-). It cannot start or end with a hyphen (-).
+    Default: aws-ia-us-east-1
+    Description: >-
+      S3 bucket name for the Quick Start assets. Quick Start bucket name can
+      include numbers, lowercase letters, uppercase letters, and hyphens (-). It
+      cannot start or end with a hyphen (-).
+    Type: String
+  QSS3BucketRegion:
+    Default: 'us-east-1'
+    Description: 'The AWS Region where the Quick Start S3 bucket (QSS3BucketName) is hosted. When using your own bucket, you must specify this value.'
+    Type: String
+  QSS3KeyPrefix:
+    AllowedPattern: '^[0-9a-zA-Z-/]*$'
+    ConstraintDescription: >-
+      Quick Start key prefix can include numbers, lowercase letters, uppercase
+      letters, hyphens (-), and forward slash (/).
+    Default: cfn-ps-microfocus-amc-es/
+    Description: >-
+      S3 key prefix for the Quick Start assets. Quick Start key prefix can
+      include numbers, lowercase letters, uppercase letters, hyphens (-), and
+      forward slash (/).
+    Type: String
+  VPCID:
+    Description: ID of your existing VPC for deployment.
+    Type: 'AWS::EC2::VPC::Id'
+Rules:
+  KeyPairsNotEmpty:
+    Assertions:
+      - Assert: !Not
+          - 'Fn::EachMemberEquals':
+              - 'Fn::RefAll': 'AWS::EC2::KeyPair::KeyName'
+              - ''
+        AssertDescription: All key pair parameters must not be empty.
+  LicenseAgreementRule:
+    Assertions:
+      - Assert:
+          'Fn::Contains':
+            - - I agree
+            - !Ref LicenseAgreement
+        AssertDescription: User must agree to the terms of the license agreement.
+  SubnetsInVPC:
+    Assertions:
+      - Assert:
+          'Fn::EachMemberIn':
+            - 'Fn::ValueOfAll':
+                - 'AWS::EC2::Subnet::Id'
+                - VpcId
+            - 'Fn::RefAll': 'AWS::EC2::VPC::Id'
+        AssertDescription: All subnets must in the VPC.
+Mappings:
+  AWSAMIRegionMap:
+    AMI:
+      MFES40AMI: ES60_pu01
+    ap-northeast-1:
+      MFES40AMI: ami-09945f4a40c7b1558
+    ap-northeast-2:
+      MFES40AMI: ami-020b9a4592aff4d7f
+    ap-south-1:
+      MFES40AMI: ami-0084ae4bf787e4a3f
+    ap-southeast-1:
+      MFES40AMI: ami-09147dc15a616e299
+    ap-southeast-2:
+      MFES40AMI: ami-048b973e91a029206
+    ca-central-1:
+      MFES40AMI: ami-001113243ad18623c
+    eu-central-1:
+      MFES40AMI: ami-0d2086652e5d161bd
+    eu-north-1:
+      MFES40AMI: ami-097aa08cc0858bbf5
+    eu-west-1:
+      MFES40AMI: ami-00c72b01caa64f3b7
+    eu-west-2:
+      MFES40AMI: ami-0a0710089ce4fd4cd
+    eu-west-3:
+      MFES40AMI: ami-057caae6e7cdca56a
+    sa-east-1:
+      MFES40AMI: ami-03f0ccb62708c1ec4
+    us-east-1:
+      MFES40AMI: ami-029ec34d6d5fc9926
+    us-east-2:
+      MFES40AMI: ami-0e1641866557c7fd5
+    us-west-1:
+      MFES40AMI: ami-0ba35ad8f5c42ad9b
+    us-west-2:
+      MFES40AMI: ami-0e9d4a9ef3e4fb89a
+Conditions:
+  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-ia-us-east-1']
+  NamePrefixIaUndefined: !Equals
+    - !Ref ESResourceNamePrefix
+    - ''
+  NamePrefixIsAWSStackname: !Equals
+    - !Ref ESResourceNamePrefix
+    - 'AWS::StackName'
+  HaveNotificationARN: !Not
+    - !Equals
+      - !Ref NotificationARN
+      - ''
+  InstallingFSDemoApp: !Equals
+    - !Ref InstallDemoApps
+    - 'true'
+Resources:
+  FSAccessSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Security group for allowed access to the Fileshare instance
+      SecurityGroupIngress:
+        - Description: >-
+            Allows access to the Enterprise Server Admin portal from the Bastion
+            hosts
+          IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref BastionAccessSGID
+        - Description: Fileshare client ingress
+          IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          SourceSecurityGroupId: !Ref FSClientAccessSGID
+        - Description: >-
+            Micro Focus Enterprise Server Directory Service (tcp) Listener
+            ingress
+          IpProtocol: tcp
+          FromPort: 86
+          ToPort: 86
+          SourceSecurityGroupId: !Ref FSClientAccessSGID
+        - Description: >-
+            Micro Focus Enterprise Server Directory Service (udp) Listener
+            ingress
+          IpProtocol: udp
+          FromPort: 86
+          ToPort: 86
+          SourceSecurityGroupId: !Ref FSClientAccessSGID
+      VpcId: !Ref VPCID
+  FSInstanceRole:
+    Type: 'AWS::IAM::Role'
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - EIAMPolicyActionWildcard
+          ignore_reasons:
+            - EIAMPolicyActionWildcard: "Wildcard action for FSInstancePolicy allowed by design"
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+      Path: /
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonSSMDirectoryServiceAccess
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/CloudWatchAgentServerPolicy
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - 's3:GetObject'
+                Effect: Allow
+                Resource:
+                  - !Sub
+                    - arn:${AWS::Partition}:s3:::${S3Bucket}
+                    - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+                  - !Sub
+                    - arn:${AWS::Partition}:s3:::${S3Bucket}/${QSS3KeyPrefix}*
+                    - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+            Version: 2012-10-17
+          PolicyName: aws-quick-start-s3-policy
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - 's3:*'
+                Effect: Allow
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${ESS3BucketName}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${ESS3BucketName}/*'
+          PolicyName: FSInstancePolicy
+  FSInstanceRoleProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref FSInstanceRole
+  FSPrimaryDataVolume:
+    Type: 'AWS::EC2::Volume'
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - EBSVolumeEncryption
+          ignore_reasons:
+            - EBSVolumeEncryption: "Ignore invalid check"
+    Properties:
+      VolumeType: gp2
+      Encrypted: true
+      Size: !Ref FSStorageInGiB
+      AvailabilityZone: !Select
+        - 0
+        - !Ref AvailabilityZones
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - '${StackNamePrefix}${FSServerName} Data Volume'
+            - StackNamePrefix: !If
+                - NamePrefixIaUndefined
+                - ''
+                - !If
+                  - NamePrefixIsAWSStackname
+                  - !Sub '${AWS::StackName}-'
+                  - !Sub '${ESResourceNamePrefix}-'
+  FSPrimaryInstance:
+    Type: 'AWS::EC2::Instance'
+    CreationPolicy:
+      ResourceSignal:
+        Count: 1
+        Timeout: PT30M
+    Metadata:
+      'AWS::CloudFormation::Authentication':
+        S3AccessCreds:
+          type: S3
+          roleName: !Ref FSInstanceRole
+          buckets:
+            - !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+            - !Ref ESS3BucketName
+      'AWS::CloudFormation::Init':
+        configSets:
+          config:
+            - 000-NoOperation
+            - 001-ConfigureCW
+            - 010-JoinDomain
+            - 020-ApplyESLicenseFile
+            - !If
+              - InstallingFSDemoApp
+              - 030-ConfigureFileshare
+              - 000-NoOperation
+        000-NoOperation:
+          commands:
+            a-no-operation:
+              command: echo "No-Operation" > nul
+              waitAfterCompletion: '0'
+        001-ConfigureCW:
+          files:
+            /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json:
+              content: !Sub |
+                {
+                  "agent": {
+                    "run_as_user": "root"
+                  },
+                  "logs": {
+                    "logs_collected": {
+                      "files": {
+                        "collect_list": [
+                          {
+                            "file_path": "/var/log/user-data.log",
+                            "log_group_name": "${ESCWLogGroup}",
+                            "log_stream_name": "FS/{instance_id}/user-data.log"
+                          },
+                          {
+                            "file_path": "/var/log/cfn-init.log",
+                            "log_group_name": "${ESCWLogGroup}",
+                            "log_stream_name": "FS/{instance_id}/cfn-init.log"
+                          },
+                          {
+                            "file_path": "/var/log/cfn-init-cmd.log",
+                            "log_group_name": "${ESCWLogGroup}",
+                            "log_stream_name": "FS/{instance_id}/cfn-init-cmd.log"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              mode: '000400'
+              owner: root
+              group: root
+          commands:
+            a-stop-cwagent:
+              command: /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a stop
+              waitAfterCompletion: '30'
+            b-start-cwagent:
+              command: /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
+              waitAfterCompletion: '30'
+        010-JoinDomain:
+          files:
+            '/tmp/JoinTo-Domain-Linux.sh':
+              source: !Sub
+                - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}scripts/JoinTo-Domain-Linux.sh'
+                - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+                  S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+              mode: 000550
+              owner: root
+              group: root
+              authentication: S3AccessCreds
+            '/tmp/NetworkShare-Setup.sh':
+              source: !Sub
+                - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}scripts/NetworkShare-Setup.sh'
+                - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+                  S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+              mode: 000550
+              owner: root
+              group: root
+              authentication: S3AccessCreds
+            '/tmp/RenameHost.sh':
+              source: !Sub
+                - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}scripts/RenameHost.sh'
+                - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+                  S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+              mode: 000550
+              owner: root
+              group: root
+              authentication: S3AccessCreds
+          commands:
+            a-JoinDomain:
+              command: !Sub
+                ./tmp/JoinTo-Domain-Linux.sh Admin ${DomainDNSName} ${DomainAdminPassword}
+              waitAfterCompletion: '0'
+            b-SetupShare:
+              command:
+                ./tmp/NetworkShare-Setup.sh
+              waitAfterCompletion: '0'
+            c-RenameMachine:
+              command: !Sub
+                ./tmp/RenameHost.sh ${DomainDNSName} FSSERVER1
+              waitAfterCompletion: '0'
+        020-ApplyESLicenseFile:
+          files:
+            '/tmp/Enterprise-Server.mflic':
+              source: !Sub
+                - >-
+                  https://${ESS3BucketName}.s3.${S3Region}.${AWS::URLSuffix}/license/${ESLicenseFilename}
+                - S3Region: !Ref ESS3BucketRegion
+              mode: 000550
+              owner: root
+              group: root
+              authentication: S3AccessCreds
+            '/tmp/Start-MFDS.sh':
+              source: !Sub
+                - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}scripts/Start-MFDS.sh'
+                - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+                  S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+              mode: 000550
+              owner: root
+              group: root
+              authentication: S3AccessCreds
+          commands:
+            a-install-license:
+              command:
+                ./var/microfocuslicensing/bin/cesadmintool.sh -install /tmp/Enterprise-Server.mflic
+            b-start-mfds:
+              command:
+                ./tmp/Start-MFDS.sh
+        030-ConfigureFileshare:
+          files:
+            '/tmp/fs.conf':
+              content: !Sub |
+                -s FS1,MFPORT:3000
+                -pf /FSdata/pass.dat
+                -cm CCITCP
+              mode: 000550
+              owner: root
+              group: root
+            '/tmp/Enterprise-Server.mflic':
+              source: !Sub
+                - >-
+                  https://${ESS3BucketName}.s3.${S3Region}.${AWS::URLSuffix}/license/${ESLicenseFilename}
+                - S3Region: !Ref ESS3BucketRegion
+              mode: 000550
+              owner: root
+              group: root
+              authentication: S3AccessCreds
+            '/tmp/Setup-Fileshare.sh':
+              source: !Sub
+                - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}scripts/Setup-Fileshare.sh'
+                - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+                  S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+              mode: 000550
+              owner: root
+              group: root
+              authentication: S3AccessCreds
+            '/tmp/Start-Fileshare.sh':
+              source: !Sub
+                - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}scripts/Start-Fileshare.sh'
+                - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+                  S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+              mode: 000550
+              owner: root
+              group: root
+              authentication: S3AccessCreds
+          commands:
+            a-Setup-Fileshare:
+              command: !Sub
+                ./tmp/Setup-Fileshare.sh '${FSVIEWUserPassword}'
+              waitAfterCompletion: '0'
+            b-Start-Fileshare:
+              command:
+                ./tmp/Start-Fileshare.sh
+    Properties:
+      AvailabilityZone: !Select
+        - 0
+        - !Ref AvailabilityZones
+      ImageId: !FindInMap
+        - AWSAMIRegionMap
+        - !Ref 'AWS::Region'
+        - MFES40AMI
+      SecurityGroupIds:
+        - !Ref DomainMemberSGID
+        - !Ref FSAccessSG
+      IamInstanceProfile: !Ref FSInstanceRoleProfile
+      KeyName: !Ref KeyPairName
+      InstanceType: !Ref FSInstanceType
+      SubnetId: !Ref PrivateSubnet1AID
+      Volumes:
+        - VolumeId: !Ref FSPrimaryDataVolume
+          Device: xvdb
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - '${StackNamePrefix}${FSServerName}'
+            - StackNamePrefix: !If
+                - NamePrefixIaUndefined
+                - ''
+                - !If
+                  - NamePrefixIsAWSStackname
+                  - !Sub '${AWS::StackName}-'
+                  - !Sub '${ESResourceNamePrefix}-'
+      UserData: !Base64
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash -xe
+            - |
+              exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+            - >
+              for i in 1 2 3 4 5; do rpm -Uvh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && break || sleep 2m; done
+            - |
+              yum -y install python-pip
+            - >
+              pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+            - >
+              rpm -Uvh https://s3.amazonaws.com/amazoncloudwatch-agent/redhat/amd64/latest/amazon-cloudwatch-agent.rpm
+            - >
+              cp -f /usr/init/redhat/cfn-hup /etc/init.d/
+            - |
+              chmod 755 /etc/init.d/cfn-hup
+              chkconfig --add cfn-hup
+            - '/bin/cfn-init -v --stack '
+            - !Ref 'AWS::StackName'
+            - ' --resource FSPrimaryInstance --configsets config --region '
+            - !Ref 'AWS::Region'
+            - |+
+
+            - '/bin/cfn-signal -e $? --stack '
+            - !Ref 'AWS::StackName'
+            - ' --resource FSPrimaryInstance --region '
+            - !Ref 'AWS::Region'
+            - |+
+  FSPrimaryInstanceRecoveryAlarm:
+    Type: 'AWS::CloudWatch::Alarm'
+    Properties:
+      AlarmDescription: !Sub |
+        "${AWS::StackName} Stack instance auto-recovery alarm/trigger."
+      Namespace: AWS/EC2
+      MetricName: StatusCheckFailed_System
+      Statistic: Minimum
+      Period: 60
+      EvaluationPeriods: 5
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0
+      AlarmActions:
+        - !Sub 'arn:aws:automate:${AWS::Region}:ec2:recover'
+        - !If
+          - HaveNotificationARN
+          - !Ref NotificationARN
+          - !Ref 'AWS::NoValue'
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref FSPrimaryInstance
+Outputs:
+  FSInstanceAvailabilityZone:
+    Description: The Availability Zone where the Fileshare instance is launched
+    Value: !GetAtt FSPrimaryInstance.AvailabilityZone
+  FSInstancePrivateDnsName:
+    Description: The private DNS name of the Fileshare instance
+    Value: !Join
+      - .
+      - - !Ref FSServerName
+        - !Ref DomainDNSName
+  FileshareDataFolderUNC:
+    Description: UNC of the Fileshare data folder
+    Value: !Sub '\\${FSServerName}\fsdir'
