@@ -1,5 +1,5 @@
 project:
-  name: quickstart-microfocus-amc-es
+  name: cfn-ps-microfocus-amc-es
   owner: chris.turner@microfocus.com
   shorten_stack_name: true
   s3_regional_buckets: true
