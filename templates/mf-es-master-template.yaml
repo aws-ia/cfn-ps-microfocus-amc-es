@@ -756,7 +756,7 @@ Parameters:
     ConstraintDescription: >-
       The bucket name can include numbers, lowercase letters, uppercase
       letters, and hyphens (-), but should not start or end with a hyphen.
-    Default: aws-quickstart
+    Default: aws-ia-us-east-1
     Description: >-
       The S3 bucket you have created for your copy of Quick Start assets, if
       you decide to customize or extend the Quick Start for your own use. The
@@ -772,7 +772,7 @@ Parameters:
     ConstraintDescription: >-
       Quick Start key prefix can include numbers, lowercase letters, uppercase
       letters, hyphens (-), and forward slash (/).
-    Default: quickstart-microfocus-amc-es/
+    Default: cfn-ps-microfocus-amc-es/
     Description: >-
       The S3 key name prefix used to simulate a folder for your copy of Quick
       Start assets, if you decide to customize or extend the Quick Start for
@@ -989,7 +989,7 @@ Rules:
           Either choose a Database Type or select 'false' for Install SQLServer
           Demo App parameter.
 Conditions:
-  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
+  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-ia-us-east-1']
   IncludeBastion: !Not
     - !Equals
       - !Ref NumberOfBastionHosts
@@ -1017,7 +1017,7 @@ Resources:
     Properties:
       TemplateURL:
         !Sub
-        - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}submodules/quickstart-aws-vpc/templates/aws-vpc.template.yaml'
+        - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}submodules/cfn-ps-aws-vpc/templates/aws-vpc.template.yaml'
         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
@@ -1169,7 +1169,7 @@ Resources:
     Properties:
       TemplateURL:
         !Sub
-        - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}submodules/quickstart-microsoft-rdgateway/templates/rdgw-domain.template'
+        - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}submodules/cfn-ps-microsoft-rdgateway/templates/rdgw-domain.template'
         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
@@ -1184,7 +1184,7 @@ Resources:
         PublicSubnet2ID: !GetAtt VPCStack.Outputs.PublicSubnet2ID
         QSS3BucketName: !Ref QSS3BucketName
         QSS3BucketRegion: !Ref QSS3BucketRegion
-        QSS3KeyPrefix: !Sub ${QSS3KeyPrefix}submodules/quickstart-microsoft-rdgateway/
+        QSS3KeyPrefix: !Sub ${QSS3KeyPrefix}submodules/cfn-ps-microsoft-rdgateway/
         RDGWCIDR: !Ref RDGWCIDR
         RDGWInstanceType: !Ref RDGWInstanceType
         VPCID: !GetAtt VPCStack.Outputs.VPCID
@@ -1212,7 +1212,7 @@ Resources:
     Properties:
       TemplateURL:
         !Sub
-        - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}submodules/quickstart-linux-bastion/templates/linux-bastion.template'
+        - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}submodules/cfn-ps-linux-bastion/templates/linux-bastion-entrypoint-existing-vpc.template.yaml'
         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
@@ -1227,7 +1227,7 @@ Resources:
         PublicSubnet2ID: !GetAtt VPCStack.Outputs.PublicSubnet2ID
         QSS3BucketName: !Ref QSS3BucketName
         QSS3BucketRegion: !Ref QSS3BucketRegion
-        QSS3KeyPrefix: !Sub ${QSS3KeyPrefix}submodules/quickstart-linux-bastion/
+        QSS3KeyPrefix: !Sub ${QSS3KeyPrefix}submodules/cfn-ps-linux-bastion/
         RemoteAccessCIDR: !Ref BastionCIDR
         VPCID: !GetAtt VPCStack.Outputs.VPCID
   BastionCreateWaitHandle:
