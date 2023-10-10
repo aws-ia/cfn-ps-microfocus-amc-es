@@ -1,10 +1,9 @@
-This guide covers the information you need to deploy the {partner-product-name} Partner Solution in the AWS Cloud.
+This Partner Solution deploys {partner-product-name} on the AWS Cloud. This guide covers the steps necessary to deploy this Partner Solution.
 
-// Fill in the info in <angle brackets> for use on the landing page only: 
-This Amazon Web Services (AWS) Partner Solution deploys [<product name>](<partner's marketing product page>) in the AWS Cloud so that <purpose>. This solution is for <target users> who want to <do what> so that <why>. For more information, refer to the [<product name> documentation](<URL>).
+This Partner Solution is for you if you are:
 
-// Deploying this solution does not guarantee an organization’s compliance with any laws, certifications, policies, or other regulations. [Uncomment this statement only for solutions that relate to compliance. We'll add the corresponding reference part to the landing page and get legal approval before publishing.]
+• An existing Micro Focus customer who has already deployed an IBM mainframe workload to Enterprise Server on premises and want to see how easy it is to migrate these rehosted applications to the AWS Cloud.
+• Interested in exploring the feasibility of moving an IBM mainframe workload to the AWS Cloud and want to experience a fully functioning production server for running mainframe applications that can be deployed with a single click.
+• A system integrator (SI) who is used to installing and configuring Enterprise Server deployments on premises, and wants a template to use as a starting point for installing and configuring Enterprise Server deployments on AWS.
 
-// For advanced information about the product, troubleshooting, or additional functionality, refer to the https://{partner-solution-github-org}.github.io/{partner-solution-project-name}/operational/index.html[Operational Guide^].
-
-// For information about using this Partner Solution for migrations, refer to the https://{partner-solution-github-org}.github.io/{partner-solution-project-name}/migration/index.html[Migration Guide^].
+The Partner Solution creates the required infrastructure for both AWS Cloud and Enterprise Server. This makes it easy for you to see a fully-functioning demonstration application called BankDemo—using COBOL, CICS, Job Control Language (JCL),  Virtual Storage Access Method (VSAM) files, and Performance and Availability Clusters (PACs) — running under Enterprise Server on AWS.
