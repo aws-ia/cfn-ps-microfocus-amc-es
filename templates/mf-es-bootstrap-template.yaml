@@ -808,3 +808,6 @@ Resources:
               - GovCloudCondition
               - s3-us-gov-west-1
               - s3
+Outputs:
+  ESS3BucketRegion:
+    Value: !Ref ESS3BucketRegion
