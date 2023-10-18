@@ -756,7 +756,7 @@ Parameters:
     ConstraintDescription: >-
       The bucket name can include numbers, lowercase letters, uppercase
       letters, and hyphens (-), but should not start or end with a hyphen.
-    Default: aws-ia-us-east-1
+    Default: aws-ia
     Description: >-
       The S3 bucket you have created for your copy of Quick Start assets, if
       you decide to customize or extend the Quick Start for your own use. The
@@ -989,7 +989,7 @@ Rules:
           Either choose a Database Type or select 'false' for Install SQLServer
           Demo App parameter.
 Conditions:
-  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-ia-us-east-1']
+  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-ia']
   IncludeBastion: !Not
     - !Equals
       - !Ref NumberOfBastionHosts
