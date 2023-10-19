@@ -679,7 +679,7 @@ Parameters:
     ConstraintDescription: >-
       The bucket name can include numbers, lowercase letters, uppercase
       letters, and hyphens (-), but should not start or end with a hyphen.
-    Default: aws-ia-us-east-1
+    Default: aws-ia
     Description: >-
       The S3 bucket you have created for your copy of Quick Start assets, if
       you decide to customize or extend the Quick Start for your own use. The
@@ -857,7 +857,7 @@ Rules:
         AssertDescription: Micro Focus is not currently supporting this Quick Start in
           the chosen region. Please contact Micro Focus or launch into a different region.
 Conditions:
-  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-ia-us-east-1']
+  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-ia']
   CreateRDSRemoteDatabaseStack: !Equals
     - !Ref DatabaseType
     - Create-RDS-Remote-Database
