@@ -1,4 +1,8 @@
 # quickstart-microfocus-amc-es
+## Deprecation Notice
+
+:x: This repository is subject to deprecation in Q4 2024. For more details, [please review this announcement](https://github.com/aws-ia/.announcements/issues/1). 
+
 ## Micro Focus Enterprise Server on the AWS Cloud
 
 This Quick Start automatically deploys Micro Focus Enterprise Server into a new or existing virtual private cloud (VPC) on the Amazon Web Services (AWS) Cloud in about 1.5 hours. The Quick Start includes AWS CloudFormation templates and a deployment guide with step-by-step instructions. It also includes an optional BankDemo demonstration application for testing the deployment.
